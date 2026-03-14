@@ -6,15 +6,12 @@ xsuite is a beautiful, minimal desktop application that combines **X**, **Grok**
 
 No more browser tabs. No more separate logins. Just one clean, native app with your custom logo and a compact centered sidebar.
 
-![xsuite Login Screen](https://github.com/yourusername/xsuite/raw/main/screenshots/login.png)
-*(Your custom logo + Grok stars background)*
+![x-suite-icon.png]
 
 ## Features
 
 - **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen with your logo
 - **One-time X login** — signs you into everything automatically via shared session
-- **Seamless blending** — sidebar color matches the active tab’s background
-- **Native Mac/Linux feel** — system tray, menu bar, custom .icns icon, .dmg packaging
 - **Ready for daily use** — fast tab switching, shared cookies, works offline once logged in
 
 ## Installation (Mac)
@@ -29,7 +26,6 @@ No more browser tabs. No more separate logins. Just one clean, native app with y
 - Click any sidebar icon to switch tabs instantly
 - Right-click the tray icon (𝕏) for quick access and Quit
 - Hover icons for tooltips
-- Your custom logo appears on the login screen and as the Dock icon
 
 ## Building from Source (for developers)
 
