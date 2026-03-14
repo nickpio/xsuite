@@ -6,8 +6,6 @@ xsuite is a beautiful, minimal desktop application that combines **X**, **Grok**
 
 No more browser tabs. No more separate logins. Just one clean, native app with your custom logo and a compact centered sidebar.
 
-![x-suite-icon.png]
-
 ## Features
 
 - **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen with your logo
@@ -16,9 +14,9 @@ No more browser tabs. No more separate logins. Just one clean, native app with y
 
 ## Installation (Mac)
 
-1. Download the latest `xsuite-1.0.0.dmg` from the Releases page
+1. Download the latest .dmg from the Releases page
 2. Open the .dmg and drag **xsuite** to your Applications folder
-3. Launch xsuite from Launchpad or Spotlight
+3. Launch xsuite from Applications or Spotlight
 4. Sign in with X once — everything else unlocks automatically
 
 ## Usage
