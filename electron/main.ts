@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, shell, MenuItem } from 'electron'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -65,7 +65,53 @@ function createTray() {
 
   tray.on('click', () => mainWindow?.show())
 }
-app.whenReady().then(createWindow)
+function createApplicationMenu() {
+  const isMac = process.platform === 'darwin'
+  const template: any[] = [
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }] : []),
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'pasteAndMatchStyle' },
+        { role: 'delete' },
+        { role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' }
+      ]
+    }
+  ]
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
+app.whenReady().then(() => {
+  createApplicationMenu()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
@@ -73,4 +119,43 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})
+
+app.on('web-contents-created', (_, contents) => {
+  // Context menu for copy/paste
+  contents.on('context-menu', (_, params) => {
+    const menu = new Menu()
+    if (params.hasImageContents) {
+      menu.append(new MenuItem({ 
+        label: 'Copy Image', 
+        click: () => contents.copyImageAt(params.x, params.y)
+      }))
+    }
+    if (params.selectionText) {
+      menu.append(new MenuItem({ label: 'Copy Text', role: 'copy' }))
+    }
+    if (params.isEditable) {
+      menu.append(new MenuItem({ label: 'Paste', role: 'paste' }))
+    }
+    
+    if (menu.items.length > 0) {
+      menu.popup()
+    }
+  })
+
+  // Handle external links for window.open (target="_blank")
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
+  
+  // Intercept navigation in the main window for external links
+  contents.on('will-navigate', (event, url) => {
+    if (contents.getType() === 'window' && !url.startsWith('http://localhost') && !url.startsWith('file://')) {
+      event.preventDefault()
+      shell.openExternal(url)
+    }
+  })
 })

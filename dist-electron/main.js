@@ -1,43 +1,136 @@
-import { app as t, BrowserWindow as l, nativeImage as s, Tray as w, Menu as h } from "electron";
-import { join as n } from "path";
-import { fileURLToPath as m } from "url";
-import c from "fs";
-const u = process.env.NODE_ENV === "development", a = n(m(import.meta.url), "..");
-let e = null, i = null;
-function r() {
-  e = new l({
+import { app, BrowserWindow, Menu, MenuItem, shell, nativeImage, Tray } from "electron";
+import { join } from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+const isDev = process.env.NODE_ENV === "development";
+const __dirname$1 = join(fileURLToPath(import.meta.url), "..");
+let mainWindow = null;
+let tray = null;
+function createWindow() {
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     titleBarStyle: "hiddenInset",
     webPreferences: {
-      nodeIntegration: !1,
-      contextIsolation: !0,
-      webviewTag: !0,
-      preload: n(a, "../dist-electron/preload.mjs")
+      nodeIntegration: false,
+      contextIsolation: true,
+      webviewTag: true,
+      preload: join(__dirname$1, "../dist-electron/preload.mjs")
     }
   });
-  const o = n(t.getAppPath(), "x-suite-icon.png");
-  c.existsSync(o) && (e.setIcon(o), process.platform === "darwin" && t.dock && t.dock.setIcon(o)), u ? e.loadURL("http://localhost:5173") : e.loadFile(n(a, "../dist/index.html")), b();
+  const iconPath = join(app.getAppPath(), "x-suite-icon.png");
+  if (fs.existsSync(iconPath)) {
+    mainWindow.setIcon(iconPath);
+    if (process.platform === "darwin" && app.dock) {
+      app.dock.setIcon(iconPath);
+    }
+  }
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173");
+  } else {
+    mainWindow.loadFile(join(__dirname$1, "../dist/index.html"));
+  }
+  createTray();
 }
-function b() {
-  const o = n(t.getAppPath(), "x-suite-icon.png"), d = c.existsSync(o) ? s.createFromPath(o).resize({ width: 16, height: 16 }) : s.createEmpty();
-  i = new w(d);
-  const p = h.buildFromTemplate([
-    { label: "Show xsuite", click: () => e?.show() },
+function createTray() {
+  const iconPath = join(app.getAppPath(), "x-suite-icon.png");
+  const trayIcon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 }) : nativeImage.createEmpty();
+  tray = new Tray(trayIcon);
+  const contextMenu = Menu.buildFromTemplate([
+    { label: "Show xsuite", click: () => mainWindow?.show() },
     { type: "separator" },
-    { label: "X", click: () => e?.webContents.send("switch-tab", "x") },
-    { label: "Grok", click: () => e?.webContents.send("switch-tab", "grok") },
-    { label: "Console", click: () => e?.webContents.send("switch-tab", "console") },
-    { label: "Grokipedia", click: () => e?.webContents.send("switch-tab", "grokipedia") },
+    { label: "X", click: () => mainWindow?.webContents.send("switch-tab", "x") },
+    { label: "Grok", click: () => mainWindow?.webContents.send("switch-tab", "grok") },
+    { label: "Console", click: () => mainWindow?.webContents.send("switch-tab", "console") },
+    { label: "Grokipedia", click: () => mainWindow?.webContents.send("switch-tab", "grokipedia") },
     { type: "separator" },
-    { label: "Quit", click: () => t.quit() }
+    { label: "Quit", click: () => app.quit() }
   ]);
-  i.setToolTip("X Suite"), i.setContextMenu(p), i.on("click", () => e?.show());
+  tray.setToolTip("X Suite");
+  tray.setContextMenu(contextMenu);
+  tray.on("click", () => mainWindow?.show());
 }
-t.whenReady().then(r);
-t.on("window-all-closed", () => {
-  process.platform !== "darwin" && t.quit();
+function createApplicationMenu() {
+  const isMac = process.platform === "darwin";
+  const template = [
+    ...isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: "about" },
+        { type: "separator" },
+        { role: "services" },
+        { type: "separator" },
+        { role: "hide" },
+        { role: "hideOthers" },
+        { role: "unhide" },
+        { type: "separator" },
+        { role: "quit" }
+      ]
+    }] : [],
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "pasteAndMatchStyle" },
+        { role: "delete" },
+        { role: "selectAll" }
+      ]
+    },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },
+        { role: "forceReload" },
+        { role: "toggleDevTools" }
+      ]
+    }
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+app.whenReady().then(() => {
+  createApplicationMenu();
+  createWindow();
 });
-t.on("activate", () => {
-  l.getAllWindows().length === 0 && r();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+app.on("web-contents-created", (_, contents) => {
+  contents.on("context-menu", (_2, params) => {
+    const menu = new Menu();
+    if (params.hasImageContents) {
+      menu.append(new MenuItem({
+        label: "Copy Image",
+        click: () => contents.copyImageAt(params.x, params.y)
+      }));
+    }
+    if (params.selectionText) {
+      menu.append(new MenuItem({ label: "Copy Text", role: "copy" }));
+    }
+    if (params.isEditable) {
+      menu.append(new MenuItem({ label: "Paste", role: "paste" }));
+    }
+    if (menu.items.length > 0) {
+      menu.popup();
+    }
+  });
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      shell.openExternal(url);
+    }
+    return { action: "deny" };
+  });
+  contents.on("will-navigate", (event, url) => {
+    if (contents.getType() === "window" && !url.startsWith("http://localhost") && !url.startsWith("file://")) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
 });
