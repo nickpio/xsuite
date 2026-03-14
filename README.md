@@ -1,30 +1,42 @@
-# React + TypeScript + Vite
+# xsuite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**One native Mac window. All your X & xAI apps.**
 
-Currently, two official plugins are available:
+xsuite is a beautiful, minimal desktop application that combines **X**, **Grok**, **xAI Console**, and **Grokipedia** into a single seamless window with one X login.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+No more browser tabs. No more separate logins. Just one clean, native app with your custom logo and a compact centered sidebar.
 
-## Expanding the ESLint configuration
+![xsuite Login Screen](https://github.com/yourusername/xsuite/raw/main/screenshots/login.png)
+*(Your custom logo + Grok stars background)*
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Features
 
-- Configure the top-level `parserOptions` property like this:
+- **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen with your logo
+- **One-time X login** — signs you into everything automatically via shared session
+- **Seamless blending** — sidebar color matches the active tab’s background
+- **Native Mac/Linux feel** — system tray, menu bar, custom .icns icon, .dmg packaging
+- **Ready for daily use** — fast tab switching, shared cookies, works offline once logged in
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
+## Installation (Mac)
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+1. Download the latest `xsuite-1.0.0.dmg` from the Releases page
+2. Open the .dmg and drag **xsuite** to your Applications folder
+3. Launch xsuite from Launchpad or Spotlight
+4. Sign in with X once — everything else unlocks automatically
+
+## Usage
+
+- Click any sidebar icon to switch tabs instantly
+- Right-click the tray icon (𝕏) for quick access and Quit
+- Hover icons for tooltips
+- Your custom logo appears on the login screen and as the Dock icon
+
+## Building from Source (for developers)
+
+```bash
+git clone https://github.com/yourusername/xsuite.git
+cd xsuite
+npm install
+npm run dev          # development
+npm run build        # build
+npx electron-builder --mac --x64   # create .dmg
