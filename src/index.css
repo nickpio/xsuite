@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "flexlayout-react/style/dark.css";
 
 @layer base {
   html, body, #root {
@@ -8,4 +9,87 @@
     color: white;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
+}
+
+/* flexlayout-react overrides for a sleeker, minimal profile */
+.flexlayout__layout {
+  background-color: #000;
+}
+
+.flexlayout__border {
+  background-color: #000;
+}
+
+/* Make headers flush and subtle */
+.flexlayout__tabset_header {
+  background-color: #000 !important;
+  border-bottom: 1px solid #18181b !important; /* very faint zinc-900 border */
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+/* Tabs themselves */
+.flexlayout__tab_button {
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #71717a !important; /* zinc-500 for inactive */
+  margin-right: 2px;
+  padding: 0 12px;
+}
+
+.flexlayout__tab_button--selected {
+  background-color: #09090b !important; /* Match webview bg */
+  color: #fff !important;
+  border-top: 1px solid transparent !important; /* Remove bright active borders */
+  border-radius: 6px 6px 0 0;
+}
+
+.flexlayout__tab_button:hover {
+  color: #e4e4e7 !important;
+}
+
+/* Hide borders and splitters to make it look flush */
+.flexlayout__tabset {
+  border: none !important;
+  background-color: #09090b;
+}
+
+.flexlayout__splitter {
+  background-color: #18181b !important; /* subtle zinc-900 split dividers */
+  opacity: 1 !important;
+}
+
+.flexlayout__splitter:hover {
+  background-color: #3f3f46 !important; /* visible when dragging */
+}
+
+/* Custom Drag overlay */
+.flexlayout__drag_rect {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.flexlayout__tab {
+  background-color: #09090b;
+}
+
+/* Close button overrides */
+.flexlayout__tab_button_trailing {
+  margin-left: 8px;
+}
+
+.flexlayout__tab_button_trailing:hover {
+  background-color: transparent !important;
+}
+
+/* The actual X icon mask */
+.flexlayout__tab_button_trailing div {
+  background-color: #52525b !important; /* zinc-600 */
+}
+
+.flexlayout__tab_button_trailing:hover div {
+  background-color: #a1a1aa !important; /* zinc-400 */
 }
