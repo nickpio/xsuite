@@ -133,4 +133,10 @@ app.on("web-contents-created", (_, contents) => {
       shell.openExternal(url);
     }
   });
+  contents.on("did-finish-load", () => {
+    contents.insertCSS(`
+      ::-webkit-scrollbar { display: none !important; }
+      * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    `);
+  });
 });

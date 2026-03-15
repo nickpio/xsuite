@@ -158,4 +158,12 @@ app.on('web-contents-created', (_, contents) => {
       shell.openExternal(url)
     }
   })
+
+  // Inject CSS to hide scrollbars into every web page / webview content
+  contents.on('did-finish-load', () => {
+    contents.insertCSS(`
+      ::-webkit-scrollbar { display: none !important; }
+      * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    `)
+  })
 })

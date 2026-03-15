@@ -132,7 +132,7 @@ function App() {
     <div className="flex h-screen text-white overflow-hidden">
       {/* Compact vertically-centered sidebar */}
       {!showLogin && (
-        <div className="w-20 pt-10 h-full flex flex-col justify-start items-center space-y-6 transition-colors duration-300 bg-black z-10 border-r border-zinc-900">
+        <div className="w-20 h-full flex flex-col justify-center items-center space-y-6 transition-colors duration-300 bg-black z-10 border-r border-zinc-900">
           {tabs.map(({ id, icon: Icon }) => (
             <button
               key={id}
