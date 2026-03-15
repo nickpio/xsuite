@@ -82,12 +82,11 @@
   background-color: transparent !important;
   opacity: 1 !important;
   pointer-events: auto;
-  transition: background-color 0.15s ease;
 }
 
 .flexlayout__splitter:hover,
 .flexlayout__splitter_drag {
-  background-color: #333 !important;
+  background-color: #52525b !important; /* zinc-600 for better visibility on a 1px line */
 }
 
 /* Drag-and-drop overlay */
