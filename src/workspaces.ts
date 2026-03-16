@@ -9,7 +9,7 @@ export interface Workspace {
 const GLOBAL = {
   tabEnableClose: true,
   enableEdgeDock: true,
-  splitterSize: 1,
+  splitterSize: 3,
 }
 
 export const PRESET_WORKSPACES: Workspace[] = [
