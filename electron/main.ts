@@ -1,7 +1,19 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage, shell, MenuItem } from 'electron'
+import { app, BrowserWindow, Tray, Menu, nativeImage, shell, MenuItem, ipcMain } from 'electron'
 import { join } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+// @ts-ignore — electron-store is CommonJS
+import Store from 'electron-store'
+
+interface Workspace {
+  name: string
+  layout: any
+  isPreset?: boolean
+}
+
+const store = new Store<{ workspaces: Workspace[] }>({
+  defaults: { workspaces: [] }
+})
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -109,6 +121,30 @@ function createApplicationMenu() {
 }
 
 app.whenReady().then(() => {
+  // Workspace IPC handlers
+  ipcMain.handle('load-workspaces', () => {
+    return store.get('workspaces', [])
+  })
+
+  ipcMain.handle('save-workspace', (_event, workspace: Workspace) => {
+    const workspaces: Workspace[] = store.get('workspaces', [])
+    const idx = workspaces.findIndex(w => w.name === workspace.name)
+    if (idx >= 0) {
+      workspaces[idx] = workspace
+    } else {
+      workspaces.push(workspace)
+    }
+    store.set('workspaces', workspaces)
+    return workspaces
+  })
+
+  ipcMain.handle('delete-workspace', (_event, name: string) => {
+    const workspaces: Workspace[] = store.get('workspaces', [])
+    const filtered = workspaces.filter(w => w.name !== name)
+    store.set('workspaces', filtered)
+    return filtered
+  })
+
   createApplicationMenu()
   createWindow()
 })
@@ -157,5 +193,13 @@ app.on('web-contents-created', (_, contents) => {
       event.preventDefault()
       shell.openExternal(url)
     }
+  })
+
+  // Inject CSS to hide scrollbars into every web page / webview content
+  contents.on('did-finish-load', () => {
+    contents.insertCSS(`
+      ::-webkit-scrollbar { display: none !important; }
+      * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    `)
   })
 })

@@ -1,11 +1,131 @@
 @import "tailwindcss";
+@import "flexlayout-react/style/dark.css";
 
 @layer base {
   html, body, #root {
     height: 100%;
     margin: 0;
-    background: #09090b;
+    background: #000;
     color: white;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
+}
+
+/* ============================================================
+   FlexLayout overrides — clean black minimal
+   ============================================================ */
+
+.flexlayout__layout {
+  background-color: #000;
+}
+
+.flexlayout__border {
+  background-color: #000;
+}
+
+/* Tab strip bar */
+.flexlayout__tabset_header {
+  background-color: #000 !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  height: 36px !important;
+  min-height: 36px !important;
+}
+
+/* Tab buttons (inactive) */
+.flexlayout__tab_button {
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #52525b !important;
+  padding: 0 14px !important;
+  font-size: 13px !important;
+  transition: color 0.15s ease;
+}
+
+/* Active / selected tab — no underline, no fill, just brighter text */
+.flexlayout__tab_button--selected {
+  background-color: transparent !important;
+  color: #fff !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.flexlayout__tab_button:hover {
+  color: #e4e4e7 !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Content pane */
+.flexlayout__tab {
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* Hide scrollbars on the content area */
+.flexlayout__tab::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tabset container */
+.flexlayout__tabset {
+  border: none !important;
+  background-color: #000;
+}
+
+/* Splitters — invisible at rest, visible on hover so panels are still resizable */
+.flexlayout__splitter {
+  background-color: transparent !important;
+  opacity: 1 !important;
+  pointer-events: auto;
+}
+
+.flexlayout__splitter:hover,
+.flexlayout__splitter_drag {
+  background-color: #52525b !important; /* zinc-600 for better visibility on a 1px line */
+}
+
+/* Drag-and-drop overlay */
+.flexlayout__drag_rect {
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* Close button — fade in on hover */
+.flexlayout__tab_button_trailing {
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.flexlayout__tab_button:hover .flexlayout__tab_button_trailing,
+.flexlayout__tab_button--selected .flexlayout__tab_button_trailing {
+  opacity: 1;
+}
+
+.flexlayout__tab_button_trailing:hover {
+  background-color: transparent !important;
+}
+
+.flexlayout__tab_button_trailing div {
+  background-color: #52525b !important;
+}
+
+.flexlayout__tab_button_trailing:hover div {
+  background-color: #d1d5db !important;
+}
+
+/* Hide all scrollbars globally within layout panes */
+.flexlayout__tab * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.flexlayout__tab *::-webkit-scrollbar {
+  display: none;
 }
