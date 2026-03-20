@@ -44,7 +44,8 @@ export function WorkspaceSwitcher({ presets, custom, activeWorkspaceName, onSele
         <div className="py-1.5 max-h-80 overflow-y-auto">
           {/* Presets */}
           <div className="px-3 pt-2 pb-1">
-            <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest mb-1">Presets</p>
+            <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest mb-0.5">Presets</p>
+            <p className="text-[10px] text-zinc-600 mb-1.5">⌘⌥1–4 · Ctrl+Alt+1–4</p>
             {presets.map(ws => (
               <WorkspaceRow
                 key={ws.name}

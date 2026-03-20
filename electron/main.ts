@@ -115,6 +115,31 @@ function createApplicationMenu() {
         { role: 'forceReload' },
         { role: 'toggleDevTools' }
       ]
+    },
+    {
+      label: 'Workspace',
+      submenu: [
+        {
+          label: 'Command Center',
+          accelerator: 'CommandOrControl+Alt+1',
+          click: () => mainWindow?.webContents.send('switch-workspace-preset', 0)
+        },
+        {
+          label: 'Research',
+          accelerator: 'CommandOrControl+Alt+2',
+          click: () => mainWindow?.webContents.send('switch-workspace-preset', 1)
+        },
+        {
+          label: 'Content Creation',
+          accelerator: 'CommandOrControl+Alt+3',
+          click: () => mainWindow?.webContents.send('switch-workspace-preset', 2)
+        },
+        {
+          label: 'Focus',
+          accelerator: 'CommandOrControl+Alt+4',
+          click: () => mainWindow?.webContents.send('switch-workspace-preset', 3)
+        }
+      ]
     }
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

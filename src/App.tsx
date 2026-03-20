@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react'
 import { BookOpen, LogIn, LayoutDashboard } from 'lucide-react'
 import { FaXTwitter } from 'react-icons/fa6'
 import { XAI, Grok } from '@lobehub/icons'
@@ -6,6 +6,7 @@ import * as FlexLayout from 'flexlayout-react'
 import logo from './assets/x-suite-logo.png'
 import { PRESET_WORKSPACES, type Workspace } from './workspaces'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { dockWebview } from './webviewPool'
 
 const tabs = [
   { id: 'x', label: 'X', icon: FaXTwitter, url: 'https://x.com' },
@@ -27,6 +28,115 @@ function buildModel(layout: FlexLayout.IJsonModel) {
   return FlexLayout.Model.fromJson(layout)
 }
 
+const LAYOUT_TWEEN_MS = 320
+
+function collectTabRects(root: HTMLElement): Map<string, DOMRect> {
+  const m = new Map<string, DOMRect>()
+  root.querySelectorAll('[data-xsuite-tab]').forEach((node) => {
+    const el = node as HTMLElement
+    const id = el.dataset.xsuiteTab
+    if (id) m.set(id, el.getBoundingClientRect())
+  })
+  return m
+}
+
+/**
+ * Electron `<webview>` is composited separately and does not follow parent `transform`,
+ * so FLIP on tab shells is invisible. Tween fixed overlay panels (position/size) instead.
+ */
+function runWorkspaceOverlayTween(
+  layoutRoot: HTMLElement,
+  first: Map<string, DOMRect>,
+  removePreviousHost: () => void
+) {
+  removePreviousHost()
+
+  const ease = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+  const startTween = () => {
+    const last = collectTabRects(layoutRoot)
+    const host = document.createElement('div')
+    host.setAttribute('data-xsuite-layout-tween', '')
+    host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9998;'
+
+    type Entry = { el: HTMLDivElement; b: DOMRect }
+    const entries: Entry[] = []
+
+    for (const [id, a] of first) {
+      const b = last.get(id)
+      if (!b) continue
+      if (a.width < 2 || a.height < 2 || b.width < 2 || b.height < 2) continue
+      const dl = Math.abs(a.left - b.left)
+      const dt = Math.abs(a.top - b.top)
+      const dw = Math.abs(a.width - b.width)
+      const dh = Math.abs(a.height - b.height)
+      if (dl < 1 && dt < 1 && dw < 1 && dh < 1) continue
+
+      const el = document.createElement('div')
+      el.style.cssText = [
+        'position:absolute',
+        `left:${a.left}px`,
+        `top:${a.top}px`,
+        `width:${a.width}px`,
+        `height:${a.height}px`,
+        'background:rgba(39,39,42,0.82)',
+        'border:1px solid rgba(255,255,255,0.1)',
+        'border-radius:10px',
+        'box-shadow:0 16px 48px rgba(0,0,0,0.55)',
+      ].join(';')
+      host.appendChild(el)
+      entries.push({ el, b })
+    }
+
+    if (!entries.length) return
+
+    document.body.appendChild(host)
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (const { el, b } of entries) {
+          el.style.transition = [
+            `left ${LAYOUT_TWEEN_MS}ms ${ease}`,
+            `top ${LAYOUT_TWEEN_MS}ms ${ease}`,
+            `width ${LAYOUT_TWEEN_MS}ms ${ease}`,
+            `height ${LAYOUT_TWEEN_MS}ms ${ease}`,
+          ].join(',')
+          el.style.left = `${b.left}px`
+          el.style.top = `${b.top}px`
+          el.style.width = `${b.width}px`
+          el.style.height = `${b.height}px`
+        }
+      })
+    })
+
+    window.setTimeout(() => {
+      host.remove()
+    }, LAYOUT_TWEEN_MS + 80)
+  }
+
+  // Let flexlayout commit sizes before sampling "last" rects (avoids no-op tweens).
+  requestAnimationFrame(() => {
+    requestAnimationFrame(startTween)
+  })
+}
+
+/** Imperative webview pool — same DOM guest survives FlexLayout model swaps (no reload). */
+function PooledWebviewShell({ tabId, url }: { tabId: string; url: string }) {
+  const shellRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = shellRef.current
+    if (!el) return
+    return dockWebview(tabId, url, SHARED_PARTITION, el)
+  }, [tabId, url])
+  return (
+    <div
+      ref={shellRef}
+      className="w-full h-full min-h-0 min-w-0 [&:empty]:min-h-[120px]"
+      data-xsuite-tab={tabId}
+    />
+  )
+}
+
 function App() {
   const [showLogin, setShowLogin] = useState(true)
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace>(PRESET_WORKSPACES[0])
@@ -34,6 +144,8 @@ function App() {
   const [customWorkspaces, setCustomWorkspaces] = useState<Workspace[]>([])
   const [showSwitcher, setShowSwitcher] = useState(false)
   const [activeTab, setActiveTab] = useState('grok')
+  const layoutRef = useRef<FlexLayout.Layout>(null)
+  const workspaceFlipFromRef = useRef<Map<string, DOMRect> | null>(null)
 
   // Load persisted custom workspaces on mount
   useEffect(() => {
@@ -53,10 +165,46 @@ function App() {
     model.doAction(FlexLayout.Actions.selectTab('x'))
   }
 
-  const loadWorkspace = (ws: Workspace) => {
+  const loadWorkspaceWithTransition = useCallback((ws: Workspace) => {
+    if (ws.name === activeWorkspace.name) return
+    const root = layoutRef.current?.getRootDiv() ?? null
+    if (root) {
+      const rects = collectTabRects(root)
+      workspaceFlipFromRef.current = rects.size > 0 ? rects : null
+    } else {
+      workspaceFlipFromRef.current = null
+    }
     setActiveWorkspace(ws)
     setModel(buildModel(ws.layout))
-  }
+  }, [activeWorkspace.name])
+
+  // Menu: switch preset workspace by index (accelerators work even when a webview is focused)
+  useEffect(() => {
+    if (!ipc?.on) return
+    const handler = (_e: unknown, index: number) => {
+      if (showLogin) return
+      if (typeof index !== 'number' || index < 0 || index >= PRESET_WORKSPACES.length) return
+      loadWorkspaceWithTransition(PRESET_WORKSPACES[index])
+    }
+    ipc.on('switch-workspace-preset', handler)
+    return () => ipc.off('switch-workspace-preset', handler)
+  }, [showLogin, loadWorkspaceWithTransition])
+
+  useLayoutEffect(() => {
+    const first = workspaceFlipFromRef.current
+    if (first === null || first.size === 0) return
+    workspaceFlipFromRef.current = null
+    const root = layoutRef.current?.getRootDiv()
+    if (!root) return
+    const removeTweenLayer = () => {
+      document.querySelectorAll('[data-xsuite-layout-tween]').forEach((n) => n.remove())
+    }
+    runWorkspaceOverlayTween(root, first, removeTweenLayer)
+  }, [model])
+
+  useEffect(() => () => {
+    document.querySelectorAll('[data-xsuite-layout-tween]').forEach((n) => n.remove())
+  }, [])
 
   const handleSidebarClick = (id: string) => {
     try {
@@ -90,7 +238,7 @@ function App() {
     const updated: Workspace[] = await ipc.invoke('delete-workspace', name)
     setCustomWorkspaces(updated)
     if (activeWorkspace.name === name) {
-      loadWorkspace(PRESET_WORKSPACES[0])
+      loadWorkspaceWithTransition(PRESET_WORKSPACES[0])
     }
   }
 
@@ -108,18 +256,10 @@ function App() {
   }
 
   const factory = (node: FlexLayout.TabNode) => {
-    const component = node.getComponent()
+    const component = node.getComponent() ?? ''
     const tabConfig = tabs.find(t => t.id === component)
     if (!tabConfig) return <div>Invalid Tab</div>
-    return (
-      <webview
-        src={tabConfig.url}
-        partition={SHARED_PARTITION}
-        className="w-full h-full border-0"
-        style={{ background: '#000', display: 'flex' }}
-        allowpopups
-      />
-    )
+    return <PooledWebviewShell tabId={component} url={tabConfig.url} />
   }
 
   return (
@@ -163,7 +303,7 @@ function App() {
           presets={PRESET_WORKSPACES}
           custom={customWorkspaces}
           activeWorkspaceName={activeWorkspace.name}
-          onSelect={loadWorkspace}
+          onSelect={loadWorkspaceWithTransition}
           onSave={handleSaveWorkspace}
           onDelete={handleDeleteWorkspace}
           onClose={() => setShowSwitcher(false)}
@@ -191,6 +331,7 @@ function App() {
         ) : (
           <div className="absolute inset-0 overflow-hidden">
             <FlexLayout.Layout
+              ref={layoutRef}
               model={model}
               factory={factory}
               onRenderTab={onRenderTab}
