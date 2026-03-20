@@ -8,7 +8,7 @@ No more browser tabs. No more separate logins. Just one clean, native app with y
 
 ## Features
 
-- **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen with your logo
+- **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen
 - **One-time X login** — signs you into everything automatically via shared session
 - **Ready for daily use** — fast tab switching, shared cookies, works offline once logged in
 
