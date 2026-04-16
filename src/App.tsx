@@ -209,20 +209,37 @@ function App() {
   const handleSidebarClick = (id: string) => {
     try {
       if (model.getNodeById(id)) {
-        model.doAction(FlexLayout.Actions.selectTab(id))
+        model.doAction(FlexLayout.Actions.deleteTab(id))
+        if (activeTab === id) {
+          setActiveTab('')
+        }
       } else {
-        let targetNodeId = model.getActiveTabset()?.getId()
+        const activeTabset = model.getActiveTabset()
+        let targetNodeId = activeTabset?.getId()
         if (!targetNodeId) targetNodeId = model.getRoot().getId()
+
+        let count = 0
+        model.visitNodes(node => {
+          if (node.getType() === 'tabset') count++
+        })
+
+        let location = FlexLayout.DockLocation.RIGHT
+        if (count % 4 === 1) location = FlexLayout.DockLocation.RIGHT
+        else if (count % 4 === 2) location = FlexLayout.DockLocation.BOTTOM
+        else if (count % 4 === 3) location = FlexLayout.DockLocation.LEFT
+        else if (count % 4 === 0) location = FlexLayout.DockLocation.TOP
+
         model.doAction(FlexLayout.Actions.addNode(
           { type: 'tab', component: id, name: '', id },
           targetNodeId,
-          FlexLayout.DockLocation.CENTER,
+          location,
           -1
         ))
+
+        setActiveTab(id)
       }
-      setActiveTab(id)
     } catch (err) {
-      console.error('Failed to add/select tab', id, err)
+      console.error('Failed to add/remove tab', id, err)
     }
   }
 
@@ -263,82 +280,97 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen text-white overflow-hidden">
-      {/* Sidebar */}
-      {!showLogin && (
-        <div className="w-20 h-full flex flex-col items-center bg-black z-10 border-r border-zinc-900">
-          {/* Centered App icons group */}
-          <div className="flex-1 flex flex-col justify-center gap-6">
-            {tabs.map(({ id, icon: Icon }) => (
+    <div className="flex flex-col h-screen text-white overflow-hidden bg-black">
+      {/* Custom Title Bar that is draggable */}
+      <div 
+        className="h-10 w-full flex items-center justify-center shrink-0 border-b border-zinc-900 z-50 bg-black"
+        style={{ WebkitAppRegion: 'drag' } as any}
+      >
+        <span className="text-xs font-medium text-zinc-500 tracking-wider hidden sm:block">
+          xsuite
+        </span>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar */}
+        {!showLogin && (
+          <div className="w-20 h-full flex flex-col items-center bg-black z-10 border-r border-zinc-900">
+            {/* Centered App icons group */}
+            <div className="flex-1 flex flex-col justify-center gap-6">
+              {tabs.map(({ id, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => handleSidebarClick(id)}
+                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  className={`p-3 rounded-2xl transition-all hover:bg-white/10 relative flex items-center justify-center
+                    ${activeTab === id ? 'bg-white/10' : 'text-zinc-500 hover:text-white'}`}
+                  title={tabs.find(t => t.id === id)?.label}
+                >
+                  <Icon className="w-6 h-6" />
+                  {activeTab === id && <div className="absolute -left-px top-3 bottom-3 w-0.5 bg-white rounded-r" />}
+                </button>
+              ))}
+            </div>
+
+            {/* Workspace switcher button at the bottom */}
+            <div className="pb-6">
               <button
-                key={id}
-                onClick={() => handleSidebarClick(id)}
+                onClick={() => setShowSwitcher(v => !v)}
+                style={{ WebkitAppRegion: 'no-drag' } as any}
                 className={`p-3 rounded-2xl transition-all hover:bg-white/10 relative flex items-center justify-center
-                  ${activeTab === id ? 'bg-white/10' : 'text-zinc-500 hover:text-white'}`}
-                title={tabs.find(t => t.id === id)?.label}
+                  ${showSwitcher ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white'}`}
+                title="Workspaces"
               >
-                <Icon className="w-6 h-6" />
-                {activeTab === id && <div className="absolute -left-px top-3 bottom-3 w-0.5 bg-white rounded-r" />}
-              </button>
-            ))}
-          </div>
-
-          {/* Workspace switcher button at the bottom */}
-          <div className="pb-6">
-            <button
-              onClick={() => setShowSwitcher(v => !v)}
-              className={`p-3 rounded-2xl transition-all hover:bg-white/10 relative flex items-center justify-center
-                ${showSwitcher ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white'}`}
-              title="Workspaces"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Workspace switcher panel */}
-      {!showLogin && showSwitcher && (
-        <WorkspaceSwitcher
-          presets={PRESET_WORKSPACES}
-          custom={customWorkspaces}
-          activeWorkspaceName={activeWorkspace.name}
-          onSelect={loadWorkspaceWithTransition}
-          onSave={handleSaveWorkspace}
-          onDelete={handleDeleteWorkspace}
-          onClose={() => setShowSwitcher(false)}
-        />
-      )}
-
-      {/* Content area */}
-      <div className="flex-1 relative overflow-hidden bg-black">
-        {showLogin ? (
-          <div className="h-full flex items-center justify-center bg-black">
-            <div className="text-center">
-              <div className="mb-10">
-                <img src={logo} alt="xsuite" className="mx-auto w-[220px] h-auto object-contain" />
-              </div>
-              <p className="text-zinc-400 text-xl mb-12">All your X & xAI apps. One native application.</p>
-              <button
-                onClick={handleSignIn}
-                className="w-80 bg-white text-black font-semibold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition text-lg mx-auto"
-              >
-                <LogIn className="w-5 h-5" />
-                Sign in with X
+                <LayoutDashboard className="w-5 h-5" />
               </button>
             </div>
           </div>
-        ) : (
-          <div className="absolute inset-0 overflow-hidden">
-            <FlexLayout.Layout
-              ref={layoutRef}
-              model={model}
-              factory={factory}
-              onRenderTab={onRenderTab}
-              onModelChange={onModelChange}
-            />
-          </div>
         )}
+
+        {/* Workspace switcher panel */}
+        {!showLogin && showSwitcher && (
+          <WorkspaceSwitcher
+            presets={PRESET_WORKSPACES}
+            custom={customWorkspaces}
+            activeWorkspaceName={activeWorkspace.name}
+            onSelect={loadWorkspaceWithTransition}
+            onSave={handleSaveWorkspace}
+            onDelete={handleDeleteWorkspace}
+            onClose={() => setShowSwitcher(false)}
+          />
+        )}
+
+        {/* Content area */}
+        <div className="flex-1 relative overflow-hidden bg-black">
+          {showLogin ? (
+            <div className="h-full flex items-center justify-center bg-black">
+              <div className="text-center">
+                <div className="mb-10">
+                  <img src={logo} alt="xsuite" className="mx-auto w-[220px] h-auto object-contain" />
+                </div>
+                <p className="text-zinc-400 text-xl mb-12">All your X & xAI apps. One native application.</p>
+                <button
+                  onClick={handleSignIn}
+                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  className="w-80 bg-white text-black font-semibold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition text-lg mx-auto"
+                >
+                  <LogIn className="w-5 h-5" />
+                  Sign in with X
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 overflow-hidden">
+              <FlexLayout.Layout
+                ref={layoutRef}
+                model={model}
+                factory={factory}
+                onRenderTab={onRenderTab}
+                onModelChange={onModelChange}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

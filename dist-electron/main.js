@@ -16152,6 +16152,10 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
+      backgroundThrottling: true,
+      spellcheck: false,
+      autoplayPolicy: "user-gesture-required",
       webviewTag: true,
       preload: join(__dirname$1, "../dist-electron/preload.mjs")
     }

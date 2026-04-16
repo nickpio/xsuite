@@ -26,8 +26,11 @@ No more browser tabs. No more separate logins. Just one clean, native app with y
 - Hover icons for tooltips
 
 ## Building from Source (for developers)
+
 Build from source for most up-to-date version (minor bug fixes/additions); releases will come with major feature updates
+
 ```bash
+
 git clone https://github.com/nickpio/xsuite.git
 cd xsuite
 npm install

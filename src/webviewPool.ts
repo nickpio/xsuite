@@ -34,6 +34,10 @@ export function dockWebview(
     wv.src = url
     wv.partition = partition
     wv.setAttribute('allowpopups', '')
+    wv.setAttribute(
+      'webpreferences',
+      'contextIsolation=true,sandbox=true,backgroundThrottling=true,spellcheck=false,autoplayPolicy=user-gesture-required'
+    )
     wv.style.cssText = 'width:100%;height:100%;border:0;background:#000;display:flex'
     pool.set(tabId, wv)
   }
