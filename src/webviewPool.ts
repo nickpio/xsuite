@@ -1,6 +1,6 @@
 import { Webview } from '@tauri-apps/api/webview'
 import { invoke } from '@tauri-apps/api/core'
-import { LogicalPosition, LogicalSize, PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi'
+import { PhysicalPosition, PhysicalSize } from '@tauri-apps/api/dpi'
 
 /**
  * Reuses one Tauri Webview instance per tab id.
