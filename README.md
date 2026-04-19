@@ -3,14 +3,7 @@
 **One native Mac window. All your X & xAI apps.**
 
 xsuite is a beautiful, minimal desktop application that combines **X**, **Grok**, **xAI Console**, and **Grokipedia** into a single seamless window with one X login.
-
 No more browser tabs. No more separate logins. Just one clean, native app with your custom logo and a compact centered sidebar.
-
-## Features
-
-- **Ultra-minimal design** — 80px centered icon-only sidebar, no header, pure black login screen
-- **One-time X login** — signs you into everything automatically via shared session
-- **Ready for daily use** — fast tab switching, shared cookies, works offline once logged in
 
 ## Installation (Mac)
 
@@ -18,12 +11,6 @@ No more browser tabs. No more separate logins. Just one clean, native app with y
 2. Open the .dmg and drag **xsuite** to your Applications folder
 3. Launch xsuite from Applications or Spotlight
 4. Sign in with X once — everything else unlocks automatically
-
-## Usage
-
-- Click any sidebar icon to switch tabs instantly
-- Right-click the tray icon (𝕏) for quick access and Quit
-- Hover icons for tooltips
 
 ## Building from Source (for developers)
 
