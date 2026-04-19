@@ -25,15 +25,7 @@ export function WorkspaceSwitcher({ presets, custom, activeWorkspaceName, onSele
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div className="fixed left-24 bottom-16 z-50 w-64 rounded-xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/60 overflow-hidden">
+    <div className="w-64 h-full border-r border-zinc-900 bg-zinc-950 flex flex-col shrink-0 z-20">
         
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
@@ -41,7 +33,7 @@ export function WorkspaceSwitcher({ presets, custom, activeWorkspaceName, onSele
           <span className="text-xs font-semibold text-zinc-300 uppercase tracking-widest">Workspaces</span>
         </div>
 
-        <div className="py-1.5 max-h-80 overflow-y-auto">
+        <div className="py-1.5 flex-1 overflow-y-auto">
           {/* Presets */}
           <div className="px-3 pt-2 pb-1">
             <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest mb-0.5">Presets</p>
@@ -105,7 +97,6 @@ export function WorkspaceSwitcher({ presets, custom, activeWorkspaceName, onSele
           )}
         </div>
       </div>
-    </>
   )
 }
 

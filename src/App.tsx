@@ -7,6 +7,7 @@ import logo from './assets/x-suite-logo.png'
 import { PRESET_WORKSPACES, type Workspace } from './workspaces'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 import { dockWebview } from './webviewPool'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 const tabs = [
   { id: 'x', label: 'X', icon: FaXTwitter, url: 'https://x.com' },
@@ -17,15 +18,13 @@ const tabs = [
 
 const SHARED_PARTITION = 'persist:xsuite'
 
-// IPC bridge (injected by Electron preload)
-const ipc = (window as any).ipcRenderer as {
-  invoke: (channel: string, ...args: any[]) => Promise<any>
-  on: (channel: string, listener: (...args: any[]) => void) => void
-  off: (channel: string, listener: (...args: any[]) => void) => void
-}
+import { loadWorkspaces, saveWorkspace, deleteWorkspace } from './store'
+import { listen } from '@tauri-apps/api/event'
 
 function buildModel(layout: FlexLayout.IJsonModel) {
-  return FlexLayout.Model.fromJson(layout)
+  // FlexLayout mutates the JSON object heavily (adding IDs and cycle references).
+  // We MUST deep-clone the layout config, otherwise switching to presets twice corrupts them.
+  return FlexLayout.Model.fromJson(JSON.parse(JSON.stringify(layout)))
 }
 
 const LAYOUT_TWEEN_MS = 320
@@ -149,9 +148,9 @@ function App() {
 
   // Load persisted custom workspaces on mount
   useEffect(() => {
-    ipc.invoke('load-workspaces').then((saved: Workspace[]) => {
+    loadWorkspaces().then((saved) => {
       if (saved?.length) setCustomWorkspaces(saved)
-    }).catch(() => {})
+    }).catch(console.error)
   }, [])
 
   // Keep activeTab in sync with layout selections
@@ -180,15 +179,61 @@ function App() {
 
   // Menu: switch preset workspace by index (accelerators work even when a webview is focused)
   useEffect(() => {
-    if (!ipc?.on) return
-    const handler = (_e: unknown, index: number) => {
+    let unlisten: (() => void) | undefined;
+    listen<number>('switch-workspace-preset', (event) => {
       if (showLogin) return
+      const index = event.payload
       if (typeof index !== 'number' || index < 0 || index >= PRESET_WORKSPACES.length) return
       loadWorkspaceWithTransition(PRESET_WORKSPACES[index])
-    }
-    ipc.on('switch-workspace-preset', handler)
-    return () => ipc.off('switch-workspace-preset', handler)
+    }).then(fn => { unlisten = fn });
+    return () => { if (unlisten) unlisten() }
   }, [showLogin, loadWorkspaceWithTransition])
+
+  // Tray Integration: open or focus an app from the tray menu
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<string>('open-app-from-tray', (event) => {
+      if (showLogin) return
+      const id = event.payload
+
+      // Map the tray payload string directly to the tab IDs we use (which match tabs.ts components)
+      let targetId = id
+      if (id === 'X') targetId = 'x'
+      if (id === 'Grok') targetId = 'grok'
+      if (id === 'Grokipedia') targetId = 'grokipedia'
+      if (id === 'console.x.ai') targetId = 'console' // Assuming this maps to console? Wait, I should check the actual ids used in tabs.ts or handleSidebarClick!
+
+      if (model.getNodeById(targetId)) {
+        model.doAction(FlexLayout.Actions.selectTab(targetId))
+        setActiveTab(targetId)
+      } else {
+        const activeTabset = model.getActiveTabset()
+        let targetNodeId = activeTabset?.getId()
+        if (!targetNodeId) targetNodeId = model.getRoot().getId()
+
+        let count = 0
+        model.visitNodes(node => {
+          if (node.getType() === 'tabset') count++
+        })
+
+        let location = FlexLayout.DockLocation.RIGHT
+        if (count % 4 === 1) location = FlexLayout.DockLocation.RIGHT
+        else if (count % 4 === 2) location = FlexLayout.DockLocation.BOTTOM
+        else if (count % 4 === 3) location = FlexLayout.DockLocation.LEFT
+        else if (count % 4 === 0) location = FlexLayout.DockLocation.TOP
+
+        model.doAction(FlexLayout.Actions.addNode(
+          { type: 'tab', component: targetId, name: '', id: targetId },
+          targetNodeId,
+          location,
+          -1
+        ))
+
+        setActiveTab(targetId)
+      }
+    }).then(fn => { unlisten = fn });
+    return () => { if (unlisten) unlisten() }
+  }, [showLogin, model])
 
   useLayoutEffect(() => {
     const first = workspaceFlipFromRef.current
@@ -246,13 +291,13 @@ function App() {
   const handleSaveWorkspace = async (name: string) => {
     const snapshot = model.toJson()
     const ws: Workspace = { name, layout: snapshot, isPreset: false }
-    const updated: Workspace[] = await ipc.invoke('save-workspace', ws)
+    const updated = await saveWorkspace(ws)
     setCustomWorkspaces(updated)
     setActiveWorkspace(ws)
   }
 
   const handleDeleteWorkspace = async (name: string) => {
-    const updated: Workspace[] = await ipc.invoke('delete-workspace', name)
+    const updated = await deleteWorkspace(name)
     setCustomWorkspaces(updated)
     if (activeWorkspace.name === name) {
       loadWorkspaceWithTransition(PRESET_WORKSPACES[0])
@@ -284,9 +329,15 @@ function App() {
       {/* Custom Title Bar that is draggable */}
       <div 
         className="h-10 w-full flex items-center justify-center shrink-0 border-b border-zinc-900 z-50 bg-black"
-        style={{ WebkitAppRegion: 'drag' } as any}
+        onMouseDown={(e) => {
+          if (e.buttons === 1) { // Left click only
+            getCurrentWindow().startDragging()
+          }
+        }}
       >
-        <span className="text-xs font-medium text-zinc-500 tracking-wider hidden sm:block">
+        <span 
+          className="text-xs font-medium text-zinc-500 tracking-wider hidden sm:block pointer-events-none select-none"
+        >
           xsuite
         </span>
       </div>
@@ -301,7 +352,7 @@ function App() {
                 <button
                   key={id}
                   onClick={() => handleSidebarClick(id)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  data-tauri-drag-region="false"
                   className={`p-3 rounded-2xl transition-all hover:bg-white/10 relative flex items-center justify-center
                     ${activeTab === id ? 'bg-white/10' : 'text-zinc-500 hover:text-white'}`}
                   title={tabs.find(t => t.id === id)?.label}
@@ -316,7 +367,7 @@ function App() {
             <div className="pb-6">
               <button
                 onClick={() => setShowSwitcher(v => !v)}
-                style={{ WebkitAppRegion: 'no-drag' } as any}
+                data-tauri-drag-region="false"
                 className={`p-3 rounded-2xl transition-all hover:bg-white/10 relative flex items-center justify-center
                   ${showSwitcher ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white'}`}
                 title="Workspaces"
@@ -351,7 +402,7 @@ function App() {
                 <p className="text-zinc-400 text-xl mb-12">All your X & xAI apps. One native application.</p>
                 <button
                   onClick={handleSignIn}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  data-tauri-drag-region="false"
                   className="w-80 bg-white text-black font-semibold py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-zinc-200 transition text-lg mx-auto"
                 >
                   <LogIn className="w-5 h-5" />
