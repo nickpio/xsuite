@@ -23,6 +23,25 @@ const SCROLLBAR_HIDE_SCRIPT: &str = r#"
 })();
 "#;
 
+const FUSION_BRIDGE_SCRIPT: &str = r#"
+(function() {
+    if (window.__xsuite_fusion) return;
+    window.__xsuite_fusion = true;
+    
+    document.addEventListener('xsuite-scrape', async () => {
+        // Simple scraper: get the main text content or thread content if on X
+        const text = document.body.innerText;
+        const url = window.location.href;
+        const title = document.title;
+        
+        // Emit back to the main app
+        if (window.__TAURI__) {
+            window.__TAURI__.event.emit('xsuite-scraped-data', { text, url, title });
+        }
+    });
+})();
+"#;
+
 /// Disable native scroll indicators on the WKWebView's enclosing NSScrollView.
 #[cfg(target_os = "macos")]
 fn disable_scroll_indicators(webview: &tauri::Webview) {
@@ -64,6 +83,7 @@ fn create_webview(app: tauri::AppHandle, label: String, url: String) -> Result<(
 
     let webview_builder = WebviewBuilder::new(&label, tauri::WebviewUrl::External(url.parse().map_err(|e| format!("{e}"))?))
         .initialization_script(SCROLLBAR_HIDE_SCRIPT)
+        .initialization_script(FUSION_BRIDGE_SCRIPT)
         .background_color(tauri::window::Color(0, 0, 0, 255));
 
     let webview = window.add_child(webview_builder, tauri::LogicalPosition::new(0, 0), tauri::LogicalSize::new(1, 1))
@@ -75,12 +95,20 @@ fn create_webview(app: tauri::AppHandle, label: String, url: String) -> Result<(
     Ok(())
 }
 
+#[tauri::command]
+fn eval_in_webview(app: tauri::AppHandle, label: String, script: String) -> Result<(), String> {
+    let webview = app.get_webview(&label).ok_or_else(|| format!("webview '{label}' not found"))?;
+    webview.eval(&script).map_err(|e| format!("{e}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    .plugin(tauri_plugin_dialog::init())
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_shell::init())
-    .invoke_handler(tauri::generate_handler![create_webview])
+    .plugin(tauri_plugin_fs::init())
+    .invoke_handler(tauri::generate_handler![create_webview, eval_in_webview])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

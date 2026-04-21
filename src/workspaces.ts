@@ -18,23 +18,40 @@ export const PRESET_WORKSPACES: Workspace[] = [
     isPreset: true,
     layout: {
       global: GLOBAL,
-      borders: [],
+      borders: [
+        {
+          type: 'border',
+          location: 'right',
+          size: 450,
+          children: [
+            {
+              type: 'tab',
+              name: 'Grok Chat',
+              component: 'grok',
+              id: 'grok',
+              enableClose: false
+            }
+          ]
+        }
+      ],
       layout: {
-        type: 'row', weight: 100,
+        type: 'row',
+        weight: 100,
         children: [
-          { type: 'tabset', weight: 25, children: [{ type: 'tab', name: '', component: 'x', id: 'x' }] },
-          { type: 'tabset', weight: 50, children: [{ type: 'tab', name: '', component: 'grok', id: 'grok' }] },
           {
-            type: 'row', weight: 25,
+            type: 'tabset',
+            weight: 100,
             children: [
-              { type: 'tabset', weight: 50, children: [{ type: 'tab', name: '', component: 'console', id: 'console' }] },
-              { type: 'tabset', weight: 50, children: [{ type: 'tab', name: '', component: 'grokipedia', id: 'grokipedia' }] },
+              { type: 'tab', name: 'X', component: 'x', id: 'x' },
+              { type: 'tab', name: 'Grokipedia', component: 'grokipedia', id: 'grokipedia' },
+              { type: 'tab', name: 'Grok Code', component: 'grokcode', id: 'grokcode' }
             ]
           }
         ]
       }
     }
   },
+
   {
     name: 'Research',
     isPreset: true,
@@ -44,9 +61,9 @@ export const PRESET_WORKSPACES: Workspace[] = [
       layout: {
         type: 'row', weight: 100,
         children: [
-          { type: 'tabset', weight: 35, children: [{ type: 'tab', name: '', component: 'grokipedia', id: 'grokipedia' }] },
-          { type: 'tabset', weight: 45, children: [{ type: 'tab', name: '', component: 'grok', id: 'grok' }] },
-          { type: 'tabset', weight: 20, children: [{ type: 'tab', name: '', component: 'x', id: 'x' }] },
+          { type: 'tabset', weight: 35, children: [{ type: 'tab', name: 'Grokipedia', component: 'grokipedia', id: 'grokipedia' }] },
+          { type: 'tabset', weight: 45, children: [{ type: 'tab', name: 'Grok', component: 'grok', id: 'grok' }] },
+          { type: 'tabset', weight: 20, children: [{ type: 'tab', name: 'X', component: 'x', id: 'x' }] },
         ]
       }
     }
@@ -60,8 +77,8 @@ export const PRESET_WORKSPACES: Workspace[] = [
       layout: {
         type: 'row', weight: 100,
         children: [
-          { type: 'tabset', weight: 60, children: [{ type: 'tab', name: '', component: 'grok', id: 'grok' }] },
-          { type: 'tabset', weight: 40, children: [{ type: 'tab', name: '', component: 'x', id: 'x' }] },
+          { type: 'tabset', weight: 60, children: [{ type: 'tab', name: 'Grok', component: 'grok', id: 'grok' }] },
+          { type: 'tabset', weight: 40, children: [{ type: 'tab', name: 'X', component: 'x', id: 'x' }] },
         ]
       }
     }
@@ -75,7 +92,7 @@ export const PRESET_WORKSPACES: Workspace[] = [
       layout: {
         type: 'row', weight: 100,
         children: [
-          { type: 'tabset', weight: 100, children: [{ type: 'tab', name: '', component: 'grok', id: 'grok' }] },
+          { type: 'tabset', weight: 100, children: [{ type: 'tab', name: 'Grok', component: 'grok', id: 'grok' }] },
         ]
       }
     }

@@ -15,6 +15,8 @@
     "core:webview:allow-set-webview-size",
     "core:window:allow-start-dragging",
     "store:default",
-    "shell:default"
+    "shell:default",
+    "dialog:default",
+    "fs:default"
   ]
 }

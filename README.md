@@ -21,6 +21,5 @@ Build from source for most up-to-date version (minor bug fixes/additions); relea
 git clone https://github.com/nickpio/xsuite.git
 cd xsuite
 npm install
-npm run dev          # development
-npm run build        # build
-npx electron-builder --mac --x64   # create .dmg
+npm run tauri dev    # development
+npm run tauri build  # build .app / .dmg
